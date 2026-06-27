@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/auth_provider.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../features/auth/auth_screen.dart';
 import '../../features/landing/landing_screen.dart';
@@ -45,8 +46,37 @@ CustomTransitionPage<void> _buildPageTransition(
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authProvider);
+
   return GoRouter(
     initialLocation: '/',
+    redirect: (context, state) {
+      final location = state.matchedLocation;
+      final isSplash = location == '/';
+      final isLanding = location == '/landing';
+      final isAuth = location.startsWith('/auth');
+      final isShellRoute =
+          location == '/home' ||
+          location == '/map' ||
+          location == '/settings' ||
+          location.startsWith('/donor-profile/');
+
+      if (!authState.isSessionReady) {
+        return isSplash ? null : '/';
+      }
+
+      final isLoggedIn = authState.user != null;
+
+      if (!isLoggedIn && isShellRoute) {
+        return '/landing';
+      }
+
+      if (isLoggedIn && (isSplash || isLanding || isAuth)) {
+        return '/home';
+      }
+
+      return null;
+    },
     routes: [
       // Splash
       GoRoute(

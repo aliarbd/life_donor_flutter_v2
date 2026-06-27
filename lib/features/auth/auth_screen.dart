@@ -87,17 +87,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         _passwordController.text,
       );
     } else {
-      success = await authNotifier.register(
+      success = await authNotifier.signup(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        bloodGroup: _selectedBloodGroup,
-        location: _selectedDistrict,
-        district: _selectedDistrict,
-        thana: _selectedThana,
-        area: _selectedArea,
         phone: _phoneController.text.trim(),
-        avatarUrl: '',
+        bloodGroup: _selectedBloodGroup,
+        gender: 'Not specified',
+        district: _selectedDistrict,
+        upazila: _selectedThana,
+        address: [
+          _selectedDistrict,
+          _selectedThana,
+          _selectedArea,
+        ].where((value) => value.trim().isNotEmpty).join(', '),
+        photoUrl: '',
         isAvailable: _isAvailable,
       );
     }
@@ -371,11 +375,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                               const SizedBox(height: 8),
 
                               // Error message
-                              if (authState.error != null)
+                              if (authState.errorMessage != null)
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
                                   child: Text(
-                                    authState.error!,
+                                    authState.errorMessage!,
                                     style: const TextStyle(
                                       color: AppColors.primaryRedLight,
                                       fontSize: 13,

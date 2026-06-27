@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "193099775822",
+    "project_id": "lifedonor-67082",
+    "storage_bucket": "lifedonor-67082.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:193099775822:android:166eaecd969cbae657681f",
+        "android_client_info": {
+          "package_name": "com.example.blood_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCh75C5MJIe1BTYzQCIbNY3pPQ_UlcX05I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

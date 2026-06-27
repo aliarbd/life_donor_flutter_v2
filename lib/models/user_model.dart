@@ -1,69 +1,159 @@
 import 'dart:typed_data';
 
-// ============================================================
-// User Model
-// ============================================================
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
-  final String id;
+  final String uid;
   final String name;
   final String email;
-  final String bloodGroup;
-  final String location;
-  final String district;
-  final String thana;
-  final String area;
   final String phone;
-  final String? avatarUrl;
+  final String bloodGroup;
+  final String gender;
+  final String district;
+  final String upazila;
+  final String address;
+  final double? latitude;
+  final double? longitude;
+  final String photoUrl;
+  final bool isAvailable;
+  final String role;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  // Legacy UI-friendly fields kept for backward compatibility.
   final Uint8List? avatarBytes;
   final DateTime? lastDonationDate;
-  final bool isAvailable;
 
   const UserModel({
-    required this.id,
+    required this.uid,
     required this.name,
     required this.email,
+    required this.phone,
     required this.bloodGroup,
-    required this.location,
-    this.district = '',
-    this.thana = '',
-    this.area = '',
-    this.phone = '',
-    this.avatarUrl,
+    required this.gender,
+    required this.district,
+    required this.upazila,
+    required this.address,
+    this.latitude,
+    this.longitude,
+    this.photoUrl = '',
+    this.isAvailable = true,
+    this.role = 'donor',
+    this.createdAt,
+    this.updatedAt,
     this.avatarBytes,
     this.lastDonationDate,
-    this.isAvailable = true,
   });
 
+  String get id => uid;
+  String get location => address;
+  String get thana => upazila;
+  String get area => address;
+  String get avatarUrl => photoUrl;
+
   UserModel copyWith({
+    String? uid,
     String? id,
     String? name,
     String? email,
-    String? bloodGroup,
-    String? location,
-    String? district,
-    String? thana,
-    String? area,
     String? phone,
+    String? bloodGroup,
+    String? gender,
+    String? district,
+    String? upazila,
+    String? thana,
+    String? address,
+    String? location,
+    String? area,
+    double? latitude,
+    double? longitude,
+    String? photoUrl,
     String? avatarUrl,
+    bool? isAvailable,
+    String? role,
+    DateTime? createdAt,
+    DateTime? updatedAt,
     Uint8List? avatarBytes,
     DateTime? lastDonationDate,
-    bool? isAvailable,
   }) {
     return UserModel(
-      id: id ?? this.id,
+      uid: uid ?? id ?? this.uid,
       name: name ?? this.name,
       email: email ?? this.email,
-      bloodGroup: bloodGroup ?? this.bloodGroup,
-      location: location ?? this.location,
-      district: district ?? this.district,
-      thana: thana ?? this.thana,
-      area: area ?? this.area,
       phone: phone ?? this.phone,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
+      bloodGroup: bloodGroup ?? this.bloodGroup,
+      gender: gender ?? this.gender,
+      district: district ?? this.district,
+      upazila: upazila ?? thana ?? this.upazila,
+      address: address ?? location ?? area ?? this.address,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      photoUrl: photoUrl ?? avatarUrl ?? this.photoUrl,
+      isAvailable: isAvailable ?? this.isAvailable,
+      role: role ?? this.role,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       avatarBytes: avatarBytes ?? this.avatarBytes,
       lastDonationDate: lastDonationDate ?? this.lastDonationDate,
-      isAvailable: isAvailable ?? this.isAvailable,
     );
+  }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'uid': uid,
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'bloodGroup': bloodGroup,
+      'gender': gender,
+      'district': district,
+      'upazila': upazila,
+      'address': address,
+      'latitude': latitude,
+      'longitude': longitude,
+      'photoUrl': photoUrl,
+      'isAvailable': isAvailable,
+      'role': role,
+      'createdAt': createdAt == null
+          ? FieldValue.serverTimestamp()
+          : Timestamp.fromDate(createdAt!),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+  }
+
+  static UserModel fromFirestore(Map<String, dynamic> data) {
+    return UserModel(
+      uid: (data['uid'] ?? '') as String,
+      name: (data['name'] ?? '') as String,
+      email: (data['email'] ?? '') as String,
+      phone: (data['phone'] ?? '') as String,
+      bloodGroup: (data['bloodGroup'] ?? '') as String,
+      gender: (data['gender'] ?? '') as String,
+      district: (data['district'] ?? '') as String,
+      upazila: (data['upazila'] ?? '') as String,
+      address: (data['address'] ?? '') as String,
+      latitude: _toDouble(data['latitude']),
+      longitude: _toDouble(data['longitude']),
+      photoUrl: (data['photoUrl'] ?? '') as String,
+      isAvailable: (data['isAvailable'] ?? true) as bool,
+      role: (data['role'] ?? 'donor') as String,
+      createdAt: _toDateTime(data['createdAt']),
+      updatedAt: _toDateTime(data['updatedAt']),
+    );
+  }
+
+  static DateTime? _toDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    return null;
+  }
+
+  static double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 }

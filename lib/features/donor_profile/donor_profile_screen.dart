@@ -97,6 +97,12 @@ class DonorProfileScreen extends ConsumerWidget {
                   user: user!,
                   isDark: isDark,
                   onEdit: () => _showEditProfileDialog(context, ref, user),
+                  onLogout: () async {
+                    await ref.read(authProvider.notifier).logout();
+                    if (context.mounted) {
+                      context.go('/landing');
+                    }
+                  },
                 )
               : _PublicProfileView(
                   donor: donor!,
@@ -420,11 +426,13 @@ class _OwnProfileView extends StatelessWidget {
   final UserModel user;
   final bool isDark;
   final VoidCallback onEdit;
+  final Future<void> Function() onLogout;
 
   const _OwnProfileView({
     required this.user,
     required this.isDark,
     required this.onEdit,
+    required this.onLogout,
   });
 
   @override
@@ -644,17 +652,41 @@ class _OwnProfileView extends StatelessWidget {
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerRight,
-                child: FilledButton.icon(
-                  onPressed: onEdit,
-                  icon: const Icon(Icons.edit_rounded, size: 18),
-                  label: const Text('Edit Profile'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primaryRed,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 12),
-                    textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                  ),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit_rounded, size: 18),
+                      label: const Text('Edit Profile'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primaryRed,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 12),
+                        textStyle:
+                            GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => onLogout(),
+                      icon: const Icon(Icons.logout_rounded, size: 18),
+                      label: const Text('Logout'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.urgentRed,
+                        side: BorderSide(
+                          color: AppColors.urgentRed.withOpacity(0.6),
+                          width: 1.4,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 12),
+                        textStyle:
+                            GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1306,10 +1338,21 @@ class _ActionCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.18),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.75),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: Icon(icon, color: Colors.white, size: 24),
+              child: Icon(icon, color: colors.first, size: 24),
             ),
           ],
         ),
