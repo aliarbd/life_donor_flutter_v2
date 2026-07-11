@@ -12,6 +12,7 @@ import '../../features/landing/landing_screen.dart';
 import '../../features/find_donor/find_donor_screen.dart';
 import '../../features/request_blood/request_blood_screen.dart';
 import '../../features/donor_profile/donor_profile_screen.dart';
+import '../../features/donor_profile/edit_profile_screen.dart';
 import '../../features/map/map_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/home/shell_screen.dart';
@@ -59,6 +60,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           location == '/home' ||
           location == '/map' ||
           location == '/settings' ||
+          location == '/edit-profile' ||
           location.startsWith('/donor-profile/');
 
       if (!authState.isSessionReady) {
@@ -138,6 +140,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/request-blood',
         pageBuilder: (context, state) =>
             _buildPageTransition(context, state, const RequestBloodScreen()),
+      ),
+      GoRoute(
+        path: '/edit-profile',
+        pageBuilder: (context, state) =>
+            _buildPageTransition(context, state, const EditProfileScreen()),
       ),
       GoRoute(
         path: '/donor-profile/:id',

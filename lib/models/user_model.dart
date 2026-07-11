@@ -15,6 +15,7 @@ class UserModel {
   final double? latitude;
   final double? longitude;
   final String photoUrl;
+  final String profileImageUrl;
   final bool isAvailable;
   final String role;
   final DateTime? createdAt;
@@ -37,6 +38,7 @@ class UserModel {
     this.latitude,
     this.longitude,
     this.photoUrl = '',
+    this.profileImageUrl = '',
     this.isAvailable = true,
     this.role = 'donor',
     this.createdAt,
@@ -49,7 +51,8 @@ class UserModel {
   String get location => address;
   String get thana => upazila;
   String get area => address;
-  String get avatarUrl => photoUrl;
+  String get avatarUrl =>
+      profileImageUrl.isNotEmpty ? profileImageUrl : photoUrl;
 
   UserModel copyWith({
     String? uid,
@@ -69,6 +72,7 @@ class UserModel {
     double? longitude,
     String? photoUrl,
     String? avatarUrl,
+    String? profileImageUrl,
     bool? isAvailable,
     String? role,
     DateTime? createdAt,
@@ -89,6 +93,7 @@ class UserModel {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       photoUrl: photoUrl ?? avatarUrl ?? this.photoUrl,
+      profileImageUrl: profileImageUrl ?? avatarUrl ?? this.profileImageUrl,
       isAvailable: isAvailable ?? this.isAvailable,
       role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
@@ -111,7 +116,9 @@ class UserModel {
       'address': address,
       'latitude': latitude,
       'longitude': longitude,
-      'photoUrl': photoUrl,
+      'photoUrl': photoUrl.isNotEmpty ? photoUrl : profileImageUrl,
+      'profileImageUrl':
+          profileImageUrl.isNotEmpty ? profileImageUrl : photoUrl,
       'isAvailable': isAvailable,
       'role': role,
       'createdAt': createdAt == null
@@ -135,6 +142,8 @@ class UserModel {
       latitude: _toDouble(data['latitude']),
       longitude: _toDouble(data['longitude']),
       photoUrl: (data['photoUrl'] ?? '') as String,
+      profileImageUrl:
+          (data['profileImageUrl'] ?? data['photoUrl'] ?? '') as String,
       isAvailable: (data['isAvailable'] ?? true) as bool,
       role: (data['role'] ?? 'donor') as String,
       createdAt: _toDateTime(data['createdAt']),

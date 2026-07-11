@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/user_model.dart';
@@ -176,7 +175,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       gender: 'Not specified',
       district: district,
       upazila: thana,
-      address: [location, area].where((value) => value.trim().isNotEmpty).join(', '),
+      address:
+          [location, area].where((value) => value.trim().isNotEmpty).join(', '),
       photoUrl: avatarUrl,
       isAvailable: isAvailable,
     );
@@ -280,42 +280,69 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> updateProfile({
+  Future<bool> updateProfile({
     String? name,
     String? email,
     String? bloodGroup,
+    String? gender,
     String? location,
     String? district,
     String? thana,
+    String? upazila,
     String? area,
+    String? address,
     String? phone,
     String? avatarUrl,
     Uint8List? avatarBytes,
     bool? isAvailable,
   }) async {
     final current = state.user;
-    if (current == null) return;
+    if (current == null) {
+      state = state.copyWith(errorMessage: 'User profile not found.');
+      return false;
+    }
 
+    final nextName = name?.trim() ?? current.name;
+    final nextPhone = phone?.trim() ?? current.phone;
+    final nextBloodGroup = bloodGroup?.trim() ?? current.bloodGroup;
+    final nextDistrict = district?.trim() ?? current.district;
+    final nextUpazila = (upazila ?? thana)?.trim() ?? current.upazila;
+    final nextAddress =
+        (address ?? location ?? area)?.trim() ?? current.address;
+    final validationError = _validateProfileUpdate(
+      name: nextName,
+      phone: nextPhone,
+      bloodGroup: nextBloodGroup,
+      district: nextDistrict,
+      upazila: nextUpazila,
+      address: nextAddress,
+    );
+
+    if (validationError != null) {
+      state = state.copyWith(errorMessage: validationError);
+      return false;
+    }
+
+    final nextAvatarUrl = avatarUrl ?? current.avatarUrl;
     final updated = current.copyWith(
-      name: name,
-      email: email,
-      bloodGroup: bloodGroup,
-      location: location,
-      district: district,
-      thana: thana,
-      area: area,
-      phone: phone,
-      avatarUrl: avatarUrl,
+      name: nextName,
+      bloodGroup: nextBloodGroup,
+      gender: gender?.trim(),
+      district: nextDistrict,
+      thana: nextUpazila,
+      address: nextAddress,
+      phone: nextPhone,
+      avatarUrl: nextAvatarUrl,
+      profileImageUrl: nextAvatarUrl,
       avatarBytes: avatarBytes,
       isAvailable: isAvailable,
     );
 
-    state = state.copyWith(user: updated, clearError: true);
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       await _firestoreService.updateUser(updated.uid, {
         'name': updated.name,
-        'email': updated.email,
         'phone': updated.phone,
         'bloodGroup': updated.bloodGroup,
         'gender': updated.gender,
@@ -325,13 +352,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
         'latitude': updated.latitude,
         'longitude': updated.longitude,
         'photoUrl': updated.photoUrl,
+        'profileImageUrl': updated.profileImageUrl,
         'isAvailable': updated.isAvailable,
         'role': updated.role,
       });
+      await loadCurrentUser(uid: updated.uid);
+      return true;
+    } on FirebaseException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: _mapFirestoreException(e),
+      );
+      return false;
     } catch (_) {
       state = state.copyWith(
-        errorMessage: 'Profile updated locally, but sync failed.',
+        isLoading: false,
+        errorMessage: 'Unable to update profile. Please try again.',
       );
+      return false;
     }
   }
 
@@ -398,6 +436,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (name.trim().isEmpty) return 'Name is required.';
     if (!_isValidEmail(email)) return 'Please enter a valid email address.';
     if (password.length < 6) return 'Password must be at least 6 characters.';
+    if (phone.trim().isEmpty) return 'Phone number is required.';
+    if (bloodGroup.trim().isEmpty) return 'Blood group is required.';
+    if (district.trim().isEmpty) return 'District is required.';
+    if (upazila.trim().isEmpty) return 'Upazila is required.';
+    if (address.trim().isEmpty) return 'Address is required.';
+    return null;
+  }
+
+  String? _validateProfileUpdate({
+    required String name,
+    required String phone,
+    required String bloodGroup,
+    required String district,
+    required String upazila,
+    required String address,
+  }) {
+    if (name.trim().isEmpty) return 'Name is required.';
     if (phone.trim().isEmpty) return 'Phone number is required.';
     if (bloodGroup.trim().isEmpty) return 'Blood group is required.';
     if (district.trim().isEmpty) return 'District is required.';

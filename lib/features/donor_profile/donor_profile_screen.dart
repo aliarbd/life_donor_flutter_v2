@@ -96,7 +96,7 @@ class DonorProfileScreen extends ConsumerWidget {
               ? _OwnProfileView(
                   user: user!,
                   isDark: isDark,
-                  onEdit: () => _showEditProfileDialog(context, ref, user),
+                  onEdit: () => context.push('/edit-profile'),
                   onLogout: () async {
                     await ref.read(authProvider.notifier).logout();
                     if (context.mounted) {
