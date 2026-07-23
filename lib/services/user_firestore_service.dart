@@ -36,4 +36,20 @@ class UserFirestoreService {
       return UserModel.fromFirestore(data);
     });
   }
+
+  Stream<List<UserModel>> watchAvailableUsers() {
+    return _users
+        .where('isAvailable', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        final uid = (data['uid'] ?? '') as String;
+        return UserModel.fromFirestore({
+          ...data,
+          'uid': uid.isNotEmpty ? uid : doc.id,
+        });
+      }).toList();
+    });
+  }
 }

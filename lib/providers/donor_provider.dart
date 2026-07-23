@@ -2,9 +2,12 @@
 // Donor Provider - Manages donor search and filtering
 // ============================================================
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/donor_model.dart';
-import '../data/mock_data.dart';
+import '../models/user_model.dart';
+import '../services/user_firestore_service.dart';
 
 // Donor state
 class DonorState {
@@ -15,6 +18,7 @@ class DonorState {
   final String? selectedThana;
   final String? selectedArea;
   final bool isLoading;
+  final String? errorMessage;
 
   const DonorState({
     this.allDonors = const [],
@@ -24,6 +28,7 @@ class DonorState {
     this.selectedThana,
     this.selectedArea,
     this.isLoading = false,
+    this.errorMessage,
   });
 
   DonorState copyWith({
@@ -34,10 +39,12 @@ class DonorState {
     String? selectedThana,
     String? selectedArea,
     bool? isLoading,
+    String? errorMessage,
     bool clearSelectedBloodGroup = false,
     bool clearSelectedDistrict = false,
     bool clearSelectedThana = false,
     bool clearSelectedArea = false,
+    bool clearError = false,
   }) {
     return DonorState(
       allDonors: allDonors ?? this.allDonors,
@@ -51,23 +58,43 @@ class DonorState {
       selectedArea:
           clearSelectedArea ? null : (selectedArea ?? this.selectedArea),
       isLoading: isLoading ?? this.isLoading,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 }
 
 class DonorNotifier extends StateNotifier<DonorState> {
-  DonorNotifier() : super(const DonorState()) {
+  DonorNotifier()
+      : _userFirestoreService = UserFirestoreService.instance,
+        super(const DonorState()) {
     loadDonors();
   }
 
-  // Load mock donors
+  final UserFirestoreService _userFirestoreService;
+  StreamSubscription<List<UserModel>>? _donorsSubscription;
+
+  // Load available donors from Firestore.
   Future<void> loadDonors() async {
-    state = state.copyWith(isLoading: true);
-    await Future.delayed(const Duration(seconds: 1));
-    state = DonorState(
-      allDonors: MockData.donors,
-      filteredDonors: MockData.donors,
-      isLoading: false,
+    state = state.copyWith(isLoading: true, clearError: true);
+    await _donorsSubscription?.cancel();
+    _donorsSubscription = _userFirestoreService.watchAvailableUsers().listen(
+      (users) {
+        final donors = users.map(_userToDonor).toList();
+        state = state.copyWith(
+          allDonors: donors,
+          isLoading: false,
+          clearError: true,
+        );
+        _applyFilters();
+      },
+      onError: (_) {
+        state = state.copyWith(
+          allDonors: const [],
+          filteredDonors: const [],
+          isLoading: false,
+          errorMessage: 'Unable to load donors. Please try again.',
+        );
+      },
     );
   }
 
@@ -135,6 +162,39 @@ class DonorNotifier extends StateNotifier<DonorState> {
     }
 
     state = state.copyWith(filteredDonors: filtered);
+  }
+
+  DonorModel _userToDonor(UserModel user) {
+    final locationParts = [
+      user.address,
+      user.upazila,
+      user.district,
+    ].where((value) => value.trim().isNotEmpty).toList();
+
+    return DonorModel(
+      id: user.uid,
+      name: user.name,
+      bloodGroup: user.bloodGroup,
+      avatarUrl: user.avatarUrl,
+      location: locationParts.join(', '),
+      city: user.district,
+      district: user.district,
+      thana: user.upazila,
+      area: user.address,
+      distance: 0.0,
+      phone: user.phone,
+      lastDonationDate:
+          user.lastDonationDate ?? user.updatedAt ?? user.createdAt ?? DateTime(1970),
+      isAvailable: user.isAvailable,
+      latitude: user.latitude ?? 0.0,
+      longitude: user.longitude ?? 0.0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _donorsSubscription?.cancel();
+    super.dispose();
   }
 }
 

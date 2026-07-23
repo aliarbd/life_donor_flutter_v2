@@ -234,6 +234,17 @@ class _FindDonorScreenState extends ConsumerState<FindDonorScreen> {
 
               donorState.isLoading
                   ? const ShimmerLoading()
+                  : donorState.errorMessage != null
+                      ? Center(
+                          child: Text(
+                            donorState.errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              color: isDark ? AppColors.darkSubtext : AppColors.lightSubtext,
+                            ),
+                          ),
+                        )
                   : donorState.filteredDonors.isEmpty
                       ? Center(
                           child: Column(
