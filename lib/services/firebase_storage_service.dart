@@ -21,7 +21,7 @@ class FirebaseStorageService {
         imageBytes,
         SettableMetadata(contentType: 'image/jpeg'),
       );
-      return ref.getDownloadURL();
+      return await ref.getDownloadURL();
     } on FirebaseException {
       rethrow;
     }

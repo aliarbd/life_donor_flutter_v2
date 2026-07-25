@@ -11,7 +11,6 @@ import '../../core/theme/app_theme.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/firebase_storage_service.dart';
-import '../../services/user_firestore_service.dart';
 import '../../widgets/animated_button.dart';
 import '../../widgets/custom_text_field.dart';
 
@@ -98,30 +97,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           await FirebaseStorageService.instance.uploadProfileImage(
         uid: uid,
         imageBytes: _previewImageBytes!,
-      );
-
-      if (uploadedUrl != null) {
-        await UserFirestoreService.instance.updateUser(uid, {
-          'profileImageUrl': uploadedUrl,
-        });
-      }
+      ).timeout(const Duration(seconds: 30));
 
       if (!mounted) return null;
 
-      setState(() {
-        _selectedImageUrl = uploadedUrl;
-        _isUploadingImage = false;
-      });
+      setState(() => _selectedImageUrl = uploadedUrl);
 
       return uploadedUrl;
     } catch (_) {
       if (!mounted) return null;
-      setState(() => _isUploadingImage = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Unable to upload profile image. Please try again.')),
       );
       return null;
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+      }
     }
   }
 
@@ -140,14 +133,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       }
 
       if (!mounted) return;
-      setState(() => _previewImageBytes = bytes);
-
-      final currentUser = ref.read(authProvider).user;
-      if (currentUser == null) {
-        throw Exception('user-not-found');
-      }
-
-      await _uploadSelectedImage(currentUser.uid);
+      setState(() {
+        _previewImageBytes = bytes;
+        _selectedImageUrl = null;
+      });
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -171,7 +160,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
 
     String? avatarUrlToSave = _selectedImageUrl ?? currentUser.avatarUrl;
-    if (_previewImageBytes != null && _selectedImageUrl == null) {
+    if (_previewImageBytes != null) {
       avatarUrlToSave = await _uploadSelectedImage(currentUser.uid);
       if (avatarUrlToSave == null) {
         return;
